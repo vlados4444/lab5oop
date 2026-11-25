@@ -1,6 +1,10 @@
 /**
  * @file SharedPtr.hpp
  * @brief Шаблонный умный указатель с подсчётом ссылок.
+ *
+ * Реализует семантику разделяемого владения (shared ownership):
+ * несколько SharedPtr могут указывать на один объект, объект
+ * уничтожается, когда разрушается последний владелец.
  */
 
 #pragma once
@@ -216,6 +220,10 @@ protected:
 
 /**
  * @brief Безопасно создаёт SharedPtr<T> для одиночного объекта.
+ * @tparam T Тип создаваемого объекта.
+ * @tparam Args Типы аргументов конструктора T.
+ * @param args Аргументы, передаваемые в конструктор T.
+ * @return SharedPtr<T>, владеющий новым объектом.
  */
 template <typename T, typename... Args>
 std::enable_if_t<
@@ -227,11 +235,36 @@ make_shared(Args&&... args) {
 
 /**
  * @brief Безопасно создаёт SharedPtr<T[]> для массива.
- * Специально сделано для вызова make_shared<int[]>(N).
+ * @tparam T Тип массива (например, int[]).
+ * @param n Количество элементов.
+ * @return SharedPtr<T[]>, владеющий новым массивом.
  */
 template <typename T>
 std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0, SharedPtr<T>>
 make_shared(std::size_t n) {
     using ElementType = std::remove_extent_t<T>;
     return SharedPtr<T>(new ElementType[n]());
+}
+
+/**
+ * @brief Заполняет управляемый объект значением по умолчанию T{}.
+ * @tparam T Тип элемента.
+ * @param sp Умный указатель; если пуст — ничего не делает.
+ */
+template <typename T>
+void zeroFill(SharedPtr<T>& sp) {
+    if (sp) *sp = T{};
+}
+
+/**
+ * @brief Сравнивает значения, на которые указывают два SharedPtr.
+ * @tparam T Тип элемента.
+ * @param a Первый указатель.
+ * @param b Второй указатель.
+ * @return true, если оба непусты и *a == *b.
+ */
+template <typename T>
+bool valueEqual(const SharedPtr<T>& a, const SharedPtr<T>& b) {
+    if (!a || !b) return false;
+    return *a == *b;
 }
