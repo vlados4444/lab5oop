@@ -33,6 +33,54 @@ public:
         if (p) ++activeObjects_;
     }
 
+    /**
+     * @brief Копирующий конструктор: увеличивает счётчик ссылок.
+     * @param other Другой SharedPtr.
+     */
+    SharedPtr(const SharedPtr& other) noexcept
+        : ptr_(other.ptr_), refCount_(other.refCount_) {
+        if (refCount_) ++(*refCount_);
+    }
+
+    /**
+     * @brief Перемещающий конструктор: забирает владение.
+     * @param other SharedPtr, который станет пустым.
+     */
+    SharedPtr(SharedPtr&& other) noexcept
+        : ptr_(other.ptr_), refCount_(other.refCount_) {
+        other.ptr_ = nullptr;
+        other.refCount_ = nullptr;
+    }
+
+    /**
+     * @brief Копирующее присваивание (copy-and-swap).
+     * @param other Другой SharedPtr.
+     * @return *this.
+     */
+    SharedPtr& operator=(const SharedPtr& other) noexcept {
+        if (this != &other) {
+            SharedPtr tmp(other);
+            swap(tmp);
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Перемещающее присваивание.
+     * @param other SharedPtr, который станет пустым.
+     * @return *this.
+     */
+    SharedPtr& operator=(SharedPtr&& other) noexcept {
+        if (this != &other) {
+            release();
+            ptr_ = other.ptr_;
+            refCount_ = other.refCount_;
+            other.ptr_ = nullptr;
+            other.refCount_ = nullptr;
+        }
+        return *this;
+    }
+
     /** @brief Освобождает объект, если владелец последний. */
     ~SharedPtr() { release(); }
 
@@ -49,6 +97,21 @@ public:
 
     /// @return Количество живых управляемых объектов типа T.
     static std::size_t activeCount() noexcept { return activeObjects_; }
+
+    /**
+     * @brief Обменивает содержимое с другим SharedPtr.
+     * @param other Другой SharedPtr.
+     */
+    void swap(SharedPtr& other) noexcept {
+        std::swap(ptr_, other.ptr_);
+        std::swap(refCount_, other.refCount_);
+    }
+
+    /// @brief Разыменование.
+    T& operator*()  const { return *ptr_; }
+
+    /// @brief Доступ к членам объекта.
+    T* operator->() const { return ptr_; }
 
 protected:
     /// @brief Уменьшает счётчик и при необходимости освобождает память.
