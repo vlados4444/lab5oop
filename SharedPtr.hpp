@@ -1,10 +1,15 @@
+/**
+ * @file SharedPtr.hpp
+ * @brief Шаблонный умный указатель с подсчётом ссылок.
+ */
+
 #pragma once
 #include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <iostream>
 
-/** 
+/**
  * @brief Умный указатель с подсчётом ссылок для одиночных объектов.
  * @tparam T Тип управляемого объекта. Запрещены void и функции.
  */
@@ -110,7 +115,7 @@ protected:
     static inline std::size_t activeObjects_ = 0;
 };
 
-/** 
+/**
  * @brief Частичная специализация SharedPtr для массивов.
  * @tparam T Тип элемента массива. Запрещены void и функции.
  */
@@ -208,3 +213,25 @@ protected:
     std::size_t* refCount_;
     static inline std::size_t activeObjects_ = 0;
 };
+
+/**
+ * @brief Безопасно создаёт SharedPtr<T> для одиночного объекта.
+ */
+template <typename T, typename... Args>
+std::enable_if_t<
+    !std::is_array_v<T> && !std::is_void_v<T> && !std::is_function_v<T>,
+    SharedPtr<T>>
+make_shared(Args&&... args) {
+    return SharedPtr<T>(new T(std::forward<Args>(args)...));
+}
+
+/**
+ * @brief Безопасно создаёт SharedPtr<T[]> для массива.
+ * Специально сделано для вызова make_shared<int[]>(N).
+ */
+template <typename T>
+std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0, SharedPtr<T>>
+make_shared(std::size_t n) {
+    using ElementType = std::remove_extent_t<T>;
+    return SharedPtr<T>(new ElementType[n]());
+}
