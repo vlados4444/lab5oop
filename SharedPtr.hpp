@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <utility>
 #include <iostream>
+#include <cmath>
 
 /**
  * @brief Умный указатель с подсчётом ссылок для одиночных объектов.
@@ -220,10 +221,6 @@ protected:
 
 /**
  * @brief Безопасно создаёт SharedPtr<T> для одиночного объекта.
- * @tparam T Тип создаваемого объекта.
- * @tparam Args Типы аргументов конструктора T.
- * @param args Аргументы, передаваемые в конструктор T.
- * @return SharedPtr<T>, владеющий новым объектом.
  */
 template <typename T, typename... Args>
 std::enable_if_t<
@@ -235,9 +232,6 @@ make_shared(Args&&... args) {
 
 /**
  * @brief Безопасно создаёт SharedPtr<T[]> для массива.
- * @tparam T Тип массива (например, int[]).
- * @param n Количество элементов.
- * @return SharedPtr<T[]>, владеющий новым массивом.
  */
 template <typename T>
 std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0, SharedPtr<T>>
@@ -248,8 +242,6 @@ make_shared(std::size_t n) {
 
 /**
  * @brief Заполняет управляемый объект значением по умолчанию T{}.
- * @tparam T Тип элемента.
- * @param sp Умный указатель; если пуст — ничего не делает.
  */
 template <typename T>
 void zeroFill(SharedPtr<T>& sp) {
@@ -258,13 +250,26 @@ void zeroFill(SharedPtr<T>& sp) {
 
 /**
  * @brief Сравнивает значения, на которые указывают два SharedPtr.
- * @tparam T Тип элемента.
- * @param a Первый указатель.
- * @param b Второй указатель.
- * @return true, если оба непусты и *a == *b.
  */
 template <typename T>
 bool valueEqual(const SharedPtr<T>& a, const SharedPtr<T>& b) {
     if (!a || !b) return false;
     return *a == *b;
+}
+
+/**
+ * @brief Специализация zeroFill для double: пишет -1.0 как маркер.
+ */
+template <>
+inline void zeroFill<double>(SharedPtr<double>& sp) {
+    if (sp) *sp = -1.0;
+}
+
+/**
+ * @brief Специализация valueEqual для double: сравнение с допуском 1e-9.
+ */
+template <>
+inline bool valueEqual<double>(const SharedPtr<double>& a, const SharedPtr<double>& b) {
+    if (!a || !b) return false;
+    return std::abs(*a - *b) < 1e-9;
 }
