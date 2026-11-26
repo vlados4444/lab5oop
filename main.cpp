@@ -1,11 +1,41 @@
 /**
  * @file main.cpp
- * @brief Тесты для SharedPtr и шаблонных функций.
+ * @brief Тесты для SharedPtr, шаблонных функций и чтение данных из файла.
  */
 
 #include "SharedPtr.hpp"
 #include <iostream>
 #include <utility>
+#include <fstream>
+#include <string>
+#include <vector>
+
+/**
+ * @brief Простая запись о студенте: имя и оценка.
+ */
+struct Student {
+    std::string name;  ///< Имя студента.
+    int grade;         ///< Оценка.
+
+    /**
+     * @brief Сравнение студентов по имени и оценке.
+     * @param o Другой студент.
+     * @return true, если имя и оценка совпадают.
+     */
+    bool operator==(const Student& o) const {
+        return name == o.name && grade == o.grade;
+    }
+};
+
+/**
+ * @brief Выводит студента в формате "Имя (оценка)".
+ * @param os Поток вывода.
+ * @param s Студент.
+ * @return os.
+ */
+std::ostream& operator<<(std::ostream& os, const Student& s) {
+    return os << s.name << " (" << s.grade << ")";
+}
 
 int main() {
     // 1. Базовые тесты
@@ -39,6 +69,30 @@ int main() {
 
     SharedPtr<double> d2 = make_shared<double>(-1.0);
     std::cout << "valueEqual<double> = " << valueEqual(d1, d2) << "\n";  // 1
+
+    // 4. Чтение 10 студентов из файла
+    std::ifstream fin("data.txt");
+    if (!fin) {
+        std::cerr << "Не найден data.txt\n";
+        return 1;
+    }
+
+    std::vector<SharedPtr<Student>> students;
+    std::string name;
+    int grade;
+    // Читаем, пока не наберем 10 студентов или пока не кончится файл
+    while (students.size() < 10 && fin >> name >> grade) {
+        students.push_back(make_shared<Student>(Student{name, grade}));
+    }
+
+    std::cout << "\nСчитано студентов: " << students.size() << "\n";
+    for (auto& s : students) {
+        std::cout << *s << "\n";
+    }
+    
+    // Проверяем, что все они живы в памяти
+    std::cout << "Активных SharedPtr<Student>: " 
+              << SharedPtr<Student>::activeCount() << "\n";
     
     return 0;
 }
