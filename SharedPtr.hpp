@@ -13,6 +13,7 @@
 #include <utility>
 #include <iostream>
 #include <cmath>
+#include <typeinfo>
 
 /**
  * @brief Умный указатель с подсчётом ссылок для одиночных объектов.
@@ -24,6 +25,13 @@ class SharedPtr {
     static_assert(!std::is_function_v<T>, "SharedPtr<функция> запрещён");
 
 public:
+    /**
+     * @brief Дружественная шаблонная функция вывода.
+     * @tparam U Тип элемента.
+     */
+    template <typename U>
+    friend std::ostream& operator<<(std::ostream& os, const SharedPtr<U>& sp);
+
     /** @brief Создаёт пустой указатель. */
     SharedPtr() noexcept : ptr_(nullptr), refCount_(nullptr) {}
 
@@ -130,6 +138,13 @@ class SharedPtr<T[]> {
     static_assert(!std::is_function_v<T>, "SharedPtr<функция[]> запрещён");
 
 public:
+    /**
+     * @brief Дружественная шаблонная функция вывода для массивов.
+     * @tparam U Тип элемента.
+     */
+    template <typename U>
+    friend std::ostream& operator<<(std::ostream& os, const SharedPtr<U[]>& sp);
+
     /** @brief Создаёт пустой указатель. */
     SharedPtr() noexcept : ptr_(nullptr), refCount_(nullptr) {}
 
@@ -272,4 +287,30 @@ template <>
 inline bool valueEqual<double>(const SharedPtr<double>& a, const SharedPtr<double>& b) {
     if (!a || !b) return false;
     return std::abs(*a - *b) < 1e-9;
+}
+
+/**
+ * @brief Выводит тип и use_count для SharedPtr<T>.
+ * 
+ * Дружественная шаблонная функция: имеет доступ к приватным полям.
+ * @tparam U Тип элемента.
+ * @param os Поток вывода.
+ * @param sp Умный указатель.
+ * @return os.
+ */
+template <typename U>
+std::ostream& operator<<(std::ostream& os, const SharedPtr<U>& sp) {
+    return os << "SharedPtr<" << typeid(U).name() << "> use_count=" << sp.use_count();
+}
+
+/**
+ * @brief Выводит тип и use_count для SharedPtr<U[]>.
+ * @tparam U Тип элемента.
+ * @param os Поток вывода.
+ * @param sp Умный указатель на массив.
+ * @return os.
+ */
+template <typename U>
+std::ostream& operator<<(std::ostream& os, const SharedPtr<U[]>& sp) {
+    return os << "SharedPtr<" << typeid(U).name() << "[]> use_count=" << sp.use_count();
 }

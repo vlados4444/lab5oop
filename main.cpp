@@ -65,12 +65,17 @@ int main() {
     // 3. Специализация для double
     SharedPtr<double> d1 = make_shared<double>(3.14);
     zeroFill(d1);
-    std::cout << "d1 после zeroFill<double> = " << *d1 << "\n";  // -1
+    std::cout << "d1 после zeroFill<double> = " << *d1 << "\n";
 
     SharedPtr<double> d2 = make_shared<double>(-1.0);
-    std::cout << "valueEqual<double> = " << valueEqual(d1, d2) << "\n";  // 1
+    std::cout << "valueEqual<double> = " << valueEqual(d1, d2) << "\n";
 
-    // 4. Чтение 10 студентов из файла
+    // 4. Тест дружественной функции operator<<
+    std::cout << "\nТест operator<<:\n";
+    std::cout << p << "\n";
+    std::cout << arr << "\n";
+
+    // 5. Чтение 10 студентов из файла
     std::ifstream fin("data.txt");
     if (!fin) {
         std::cerr << "Не найден data.txt\n";
@@ -80,7 +85,6 @@ int main() {
     std::vector<SharedPtr<Student>> students;
     std::string name;
     int grade;
-    // Читаем, пока не наберем 10 студентов или пока не кончится файл
     while (students.size() < 10 && fin >> name >> grade) {
         students.push_back(make_shared<Student>(Student{name, grade}));
     }
@@ -90,7 +94,6 @@ int main() {
         std::cout << *s << "\n";
     }
     
-    // Проверяем, что все они живы в памяти
     std::cout << "Активных SharedPtr<Student>: " 
               << SharedPtr<Student>::activeCount() << "\n";
     
